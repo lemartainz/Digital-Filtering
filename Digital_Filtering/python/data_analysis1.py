@@ -19,6 +19,7 @@ import h5py
 import copy as C
 from matplotlib.widgets import Cursor
 import ffind_peaks as FP
+import sys
 
 # colored trajectories
 import matplotlib.colors as COL
@@ -291,9 +292,9 @@ class digi_data:
             return
         self.V_c = irfft(self.V_fc)
 
-    def apply_lp_filer(self):
+    def apply_lp_filter(self):
         if self.lp_fact is None:
-            print('low pass filer not calculated (use low_pass)')
+            print('low pass filter not calculated (use low_pass)')
             return
         if self.V_fc is None:
             self.V_fc = C.copy(self.V_f)
@@ -322,7 +323,8 @@ class digi_data:
         istart = int(f_start/self.df); iend = int(delta_f/self.df)
         return slice(istart, istart + iend)
     
-    def find_peaks(yval, ystep, xval = None, \
+    
+def find_peaks(yval, ystep, xval = None, \
                xmin = None, xmax = None, limits = None, \
                power = 5,\
                get_window = None ):
@@ -369,6 +371,102 @@ class digi_data:
      return [MAXTAB,MINTAB]
 
 
+def peakdet(v, delta, x = None, gauge = None, power = 5):
+    """
+    Converted from MATLAB script at http://billauer.co.il/peakdet.html
+    % Eli Billauer, 3.4.05 (Explicitly not copyrighted).
+    % This function is released to the public domain; Any use is allowed.
+
+    MAXTAB,MINTAB = peakdet(v, delta, x)
+
+    v is the array of values to analyze
+    delta is the min. step around a maximum
+
+    keyword arguments:
+    x array of x-values corresponding to v
+    gauge GaugeFrame  object for progress display
+    power at which power of 10 the analysis progress should be printed
+
+    MAXTAB[0] x-values for the maxima
+    MAXTAB[1] v-values for the maxima
+    MAXTAB[2] indices into v for the maxima
+
+    MINTAB same for the minima
+     
+    """
+    maxtab_x = []
+    maxtab_y = []
+    maxtab_i = []
+    mintab_x = []
+    mintab_y = []
+    mintab_i = []
+
+    # step size for progress information
+    pstep = 10**power
+    ndat = len(v)
+
+    if x is None:
+        x = np.arange(len(v))
+    
+    v = np.asarray(v)
+    
+    if len(v) != len(x):
+        sys.exit('Input vectors v and x must have same length')
+    
+    if not np.isscalar(delta):
+        sys.exit('Input argument delta must be a scalar')
+    
+    if delta <= 0:
+        sys.exit('Input argument delta must be positive')
+    
+    mn, mx = np.Inf, -np.Inf
+    mnpos, mxpos = np.NaN, np.NaN
+    
+    lookformax = True
+    # step = len(v)/10.
+    for i in np.arange(len(v)):
+        current_value = v[i]
+        if  current_value> mx:
+            mx = current_value
+            mxpos = x[i]
+            max_i = i
+        if current_value < mn:
+            mn = current_value
+            mnpos = x[i]
+            min_i = i
+        
+        if lookformax:
+            if current_value < mx-delta:
+                maxtab_x.append(mxpos)
+                maxtab_y.append(mx)
+                maxtab_i.append(max_i)
+                mn = current_value
+                min_i = i
+                mnpos = x[i]
+                lookformax = False
+        else:
+            if current_value > mn+delta:
+                mintab_x.append(mnpos)
+                mintab_y.append(mn)
+                mintab_i.append(min_i)
+                mx = current_value
+                mxpos = x[i]
+                max_i = i
+                lookformax = True
+    return [maxtab_x, maxtab_y, maxtab_i], [mintab_x, mintab_y, mintab_i]
+
+
+def peak_position(xpos, file_name):
+    w = open(file_name, 'w')
+    w.write('# This is the data file that corresponds to the peak positions of the spectrum. \n')
+    w.write(f'#\ alpha = {d.alpha} \n')
+    w.write(f'#\ fmax = {d.fmax} \n')
+    w.write(f'#! xs[f,0]/ xl[f,1]/ \n')
+    for i in range(len(xpos)):
+        w.write(f'{xpos[i] - 1}    {xpos[i] + 1} \n')
+    w.close()
+
+
 #%% simulated data file
 
 d_file = 'DAQ_160813-113140.hws'
@@ -381,11 +479,11 @@ d.fft()
 #%% load filter and apply
 # ready to apply cuts etc.
 
-d.load_filters('test_filer.data')
+d.load_filters('filter_160813_test.data')
 d.calc_cuts()
 d.smooth_cuts(250.)
 d.calc_low_pass()
-d.apply_lp_filer()
+d.apply_lp_filter()
 d.apply_cuts()
 d.invert_corr()
 
