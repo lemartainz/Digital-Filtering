@@ -18,7 +18,7 @@ import os
 import h5py
 import copy as C
 from matplotlib.widgets import Cursor
-import ffind_peaks as FP
+#import ffind_peaks as FP
 import sys
 
 # colored trajectories
@@ -38,6 +38,7 @@ color_cycle = cycle(color_names)
 
 from scipy.fft import rfft, irfft, rfftfreq
 from scipy.interpolate import UnivariateSpline
+from scipy.signal import butter, sosfiltfilt
 
 us = 1e-6
 
@@ -253,8 +254,12 @@ class digi_data:
     def calc_cuts(self):
         # calculate the cut factor to be applied later
         self.cut_fact = np.ones_like(self.f)
+        print("Calculating cuts")
+        
         for xs, xl in self.cuts:
             self.cut_fact [(xs <self.f)&(self.f<xl)] = 0.
+        
+        print('Done calculating cuts')
 
     def smooth_cuts(self, sigma):
         # smooth the cut edges
@@ -324,51 +329,51 @@ class digi_data:
         return slice(istart, istart + iend)
     
     
-def find_peaks(yval, ystep, xval = None, \
-               xmin = None, xmax = None, limits = None, \
-               power = 5,\
-               get_window = None ):
-     # find peaks in an array of data
-     # get_window is a function that returns the slice of data between xmin and xmax
-     # peak finding
-     nmin = 0
-     nmax = 0
-     MAXTAB=[]
-     MINTAB=[]
-     if ((xmin == None) and (xmax == None)) or (not limits) or (get_window == None):
-          print("No limits present, analyze all data")
-          results = np.zeros((2,), dtype = 'int32')
-          pmin = np.zeros((len(yval)//5, ), dtype='int32')
-          pmax = np.zeros((len(yval)//5, ), dtype='int32')
-          try:
-              FP.find_peaks(len(yval), ystep, yval, results, pmin, pmax)
-          except:
-              print("problem with peak finding")
-              return []
-          nmin = results[0]
-          nmax = results[1]
-     else:
-          # get the window
-          print(("Analyze data between ", xmin, " and ", xmax))
-          sl = get_window( xmin, xval, xmax)
-          # progress dialog
-          results = np.zeros((2,), dtype = 'int32')
-          pmin = np.zeros((len(yval[sl])//5, ), dtype='int32')
-          pmax = np.zeros((len(yval[sl])//5, ), dtype='int32')
-          try:
-              FP.find_peaks(len(yval[sl]), ystep, yval[sl], results, pmin, pmax)
-          except:
-               print("problem with peak finding")
-               return []
-          nmin = results[0]
-          nmax = results[1]
-     MAXTAB.append( xval[pmax[:nmax]] )
-     MAXTAB.append( yval[pmax[:nmax]] )
-     MAXTAB.append(pmax[:nmax])
-     MINTAB.append( xval[pmin[:nmin]] )
-     MINTAB.append( yval[pmin[:nmin]] )
-     MINTAB.append(pmin[:nmin])
-     return [MAXTAB,MINTAB]
+# def find_peaks(yval, ystep, xval = None, \
+#                xmin = None, xmax = None, limits = None, \
+#                power = 5,\
+#                get_window = None ):
+#      # find peaks in an array of data
+#      # get_window is a function that returns the slice of data between xmin and xmax
+#      # peak finding
+#      nmin = 0
+#      nmax = 0
+#      MAXTAB=[]
+#      MINTAB=[]
+#      if ((xmin == None) and (xmax == None)) or (not limits) or (get_window == None):
+#           print("No limits present, analyze all data")
+#           results = np.zeros((2,), dtype = 'int32')
+#           pmin = np.zeros((len(yval)//5, ), dtype='int32')
+#           pmax = np.zeros((len(yval)//5, ), dtype='int32')
+#           try:
+#               FP.find_peaks(len(yval), ystep, yval, results, pmin, pmax)
+#           except:
+#               print("problem with peak finding")
+#               return []
+#           nmin = results[0]
+#           nmax = results[1]
+#      else:
+#           # get the window
+#           print(("Analyze data between ", xmin, " and ", xmax))
+#           sl = get_window( xmin, xval, xmax)
+#           # progress dialog
+#           results = np.zeros((2,), dtype = 'int32')
+#           pmin = np.zeros((len(yval[sl])//5, ), dtype='int32')
+#           pmax = np.zeros((len(yval[sl])//5, ), dtype='int32')
+#           try:
+#               FP.find_peaks(len(yval[sl]), ystep, yval[sl], results, pmin, pmax)
+#           except:
+#                print("problem with peak finding")
+#                return []
+#           nmin = results[0]
+#           nmax = results[1]
+#      MAXTAB.append( xval[pmax[:nmax]] )
+#      MAXTAB.append( yval[pmax[:nmax]] )
+#      MAXTAB.append(pmax[:nmax])
+#      MINTAB.append( xval[pmin[:nmin]] )
+#      MINTAB.append( yval[pmin[:nmin]] )
+#      MINTAB.append(pmin[:nmin])
+#      return [MAXTAB,MINTAB]
 
 
 def peakdet(v, delta, x = None, gauge = None, power = 5):
@@ -463,9 +468,26 @@ def peak_position(xpos, file_name):
     w.write(f'#\ fmax = {d.fmax} \n')
     w.write(f'#! xs[f,0]/ xl[f,1]/ \n')
     for i in range(len(xpos)):
-        w.write(f'{xpos[i] - 1}    {xpos[i] + 1} \n')
+        w.write(f'{xpos[i] - 5}    {xpos[i] + 5} \n')
     w.close()
 
+
+def peak_position_ypos(xpos, cut_value, file_name):
+    l = open(file_name, 'w')
+    l.write('# This is the data file that corresponds to the peak positions of the spectrum. \n')
+    l.write(f'#\ alpha = {d.alpha} \n')
+    l.write(f'#\ fmax = {d.fmax} \n')
+    l.write(f'#\ cut_value = {cut_value} \n')
+    l.write(f'#! xs[f,0]/ xl[f,1]/ \n')
+    
+    print('Working through peaks')
+    for i in range(len(xpos)):
+        if xpos[i] >= cut_value:
+            l.write(f'{xpos[i] - 10}    {xpos[i] + 10} \n')
+    
+    print('Done')
+    l.close()
+        
 
 #%% simulated data file
 
@@ -479,7 +501,7 @@ d.fft()
 #%% load filter and apply
 # ready to apply cuts etc.
 
-d.load_filters('filter_160813_test.data')
+d.load_filters('filter_160813_test_9.data')
 d.calc_cuts()
 d.smooth_cuts(250.)
 d.calc_low_pass()
