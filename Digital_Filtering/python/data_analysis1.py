@@ -251,15 +251,25 @@ class digi_data:
         else:
             return
 
-    def calc_cuts(self):
-        # calculate the cut factor to be applied later
+    # def calc_cuts(self):
+    #     # calculate the cut factor to be applied later
+    #     self.cut_fact = np.ones_like(self.f)
+    #     print("Calculating cuts")
+        
+    #     for xs, xl in self.cuts:
+    #         self.cut_fact [(xs <self.f)&(self.f<xl)] = 0.
+        
+    #     print('Done calculating cuts')
+        
+    def calc_cut(self):
+        # Calculate the cut_fact to use later
         self.cut_fact = np.ones_like(self.f)
-        print("Calculating cuts")
+        print('Calculating Cuts')
         
-        for xs, xl in self.cuts:
-            self.cut_fact [(xs <self.f)&(self.f<xl)] = 0.
-        
-        print('Done calculating cuts')
+        for i in self.cuts:
+            self.cut_fact[int(i[0])] = 0 
+        print('Done calculating cuts!')
+
 
     def smooth_cuts(self, sigma):
         # smooth the cut edges
@@ -318,7 +328,7 @@ class digi_data:
          fd = B.get_file(f_filename)
          self.alpha = fd.par['alpha']
          self.fmax = fd.par['fmax']
-         self.cuts = list(zip(fd['xs'],fd['xl']))
+         self.cuts = list(zip(fd['xs'], fd['xl']))
 
     def get_t_slice(self, t_start, delta_t):
         istart = int(t_start/self.dt); iend = int(delta_t/self.dt)
@@ -461,29 +471,18 @@ def peakdet(v, delta, x = None, gauge = None, power = 5):
     return [maxtab_x, maxtab_y, maxtab_i], [mintab_x, mintab_y, mintab_i]
 
 
-def peak_position(xpos, file_name):
-    w = open(file_name, 'w')
-    w.write('# This is the data file that corresponds to the peak positions of the spectrum. \n')
-    w.write(f'#\ alpha = {d.alpha} \n')
-    w.write(f'#\ fmax = {d.fmax} \n')
-    w.write(f'#! xs[f,0]/ xl[f,1]/ \n')
-    for i in range(len(xpos)):
-        w.write(f'{xpos[i] - 5}    {xpos[i] + 5} \n')
-    w.close()
-
-
-def peak_position_ypos(xpos, cut_value, file_name):
+def peak_position(xpos, cut_value, file_name):
     l = open(file_name, 'w')
     l.write('# This is the data file that corresponds to the peak positions of the spectrum. \n')
     l.write(f'#\ alpha = {d.alpha} \n')
     l.write(f'#\ fmax = {d.fmax} \n')
     l.write(f'#\ cut_value = {cut_value} \n')
-    l.write(f'#! xs[f,0]/ xl[f,1]/ \n')
+    l.write(f'#! index [f,0]/ xs[f,1]/ xl[f,2]/ \n')
     
     print('Working through peaks')
     for i in range(len(xpos)):
         if xpos[i] >= cut_value:
-            l.write(f'{xpos[i] - 10}    {xpos[i] + 10} \n')
+            l.write(f'{i}   {xpos[i] - 10}    {xpos[i] + 10} \n')
     
     print('Done')
     l.close()
@@ -501,7 +500,7 @@ d.fft()
 #%% load filter and apply
 # ready to apply cuts etc.
 
-d.load_filters('filter_160813_test_9.data')
+d.load_filters('filter_160813_test_29.data')
 d.calc_cuts()
 d.smooth_cuts(250.)
 d.calc_low_pass()
@@ -522,3 +521,18 @@ B.pl.plot(d.tall[sl], np.real(d.V_c[sl]))
 
 f_name = f'{d.name}_filtered.npz'
 np.savez(f_name, time = d.tall, signal = d.V_c)
+
+#%%
+'''
+d.load_filters('filter_160813_test_28.data')
+
+d.calc_cuts()
+
+d.calc_low_pass()
+
+d.apply_lp_filter()
+
+d.apply_cuts()
+
+d.plot_spc(1)
+'''
