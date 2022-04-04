@@ -251,23 +251,24 @@ class digi_data:
         else:
             return
 
-    # def calc_cuts(self):
-    #     # calculate the cut factor to be applied later
-    #     self.cut_fact = np.ones_like(self.f)
-    #     print("Calculating cuts")
+    def calc_cuts(self):
+        # calculate the cut factor to be applied later
+        self.cut_fact = np.ones_like(self.f)
+        print("Calculating cuts")
         
-    #     for xs, xl in self.cuts:
-    #         self.cut_fact [(xs <self.f)&(self.f<xl)] = 0.
+        for xs, xl in self.cuts:
+             self.cut_fact [(xs <self.f)&(self.f<xl)] = 0.
         
-    #     print('Done calculating cuts')
+        print('Done calculating cuts')
         
     def calc_cut(self):
-        # Calculate the cut_fact to use later
+        # Calculate the cut factor to be applied later
         self.cut_fact = np.ones_like(self.f)
         print('Calculating Cuts')
         
-        for i in self.cuts:
-            self.cut_fact[int(i[0])] = 0 
+        for xs, xl in self.cuts:
+            print(xs, xl)
+            self.cut_fact[int(xs) : int(xl)] = 0.
         print('Done calculating cuts!')
 
 
@@ -477,12 +478,12 @@ def peak_position(xpos, cut_value, file_name):
     l.write(f'#\ alpha = {d.alpha} \n')
     l.write(f'#\ fmax = {d.fmax} \n')
     l.write(f'#\ cut_value = {cut_value} \n')
-    l.write(f'#! index [f,0]/ xs[f,1]/ xl[f,2]/ \n')
+    l.write(f'#! xs[f,0]/ xl[f,1]/ \n')
     
     print('Working through peaks')
     for i in range(len(xpos)):
         if xpos[i] >= cut_value:
-            l.write(f'{i}   {xpos[i] - 10}    {xpos[i] + 10} \n')
+            l.write(f'{xpos[i] - 5}    {xpos[i] + 5} \n')
     
     print('Done')
     l.close()
@@ -500,9 +501,9 @@ d.fft()
 #%% load filter and apply
 # ready to apply cuts etc.
 
-d.load_filters('filter_160813_test_29.data')
+d.load_filters('filter_160813_test_30.data')
 d.calc_cuts()
-d.smooth_cuts(250.)
+#d.smooth_cuts(250.)
 d.calc_low_pass()
 d.apply_lp_filter()
 d.apply_cuts()
