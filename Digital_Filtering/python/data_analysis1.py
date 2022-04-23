@@ -38,7 +38,7 @@ color_cycle = cycle(color_names)
 
 from scipy.fft import rfft, irfft, rfftfreq
 from scipy.interpolate import UnivariateSpline
-from scipy.signal import butter, sosfiltfilt
+# from scipy.signal import butter, sosfiltfilt
 
 us = 1e-6
 
@@ -261,14 +261,21 @@ class digi_data:
         
         print('Done calculating cuts')
         
-    def calc_cut(self):
+    def calc_cut(self, cut_value):
         # Calculate the cut factor to be applied later
         self.cut_fact = np.ones_like(self.f)
-        print('Calculating Cuts')
+        print('Calculating cuts')
+        self.cut_index = np.where(self.f == cut_value)[0]
+        # Set the cut_fact to 0 for the specified values
+        self.i_max = self.res_pos['maxima']['index']
+        self.i_min = self.res_pos['minima']['index']
+        self.x_max = self.res_pos['maxima']['x_max']
+        self.x_min = self.res_pos['minima']['x_min']
         
-        for xs, xl in self.cuts:
-            print(xs, xl)
-            self.cut_fact[int(xs) : int(xl)] = 0.
+        for i in self.i_max:
+            if i >= self.cut_index:
+                self.cut_fact[i - 900: i + 900] = 0.
+            
         print('Done calculating cuts!')
 
 
@@ -387,106 +394,128 @@ class digi_data:
 #      return [MAXTAB,MINTAB]
 
 
-def peakdet(v, delta, x = None, gauge = None, power = 5):
-    """
-    Converted from MATLAB script at http://billauer.co.il/peakdet.html
-    % Eli Billauer, 3.4.05 (Explicitly not copyrighted).
-    % This function is released to the public domain; Any use is allowed.
-
-    MAXTAB,MINTAB = peakdet(v, delta, x)
-
-    v is the array of values to analyze
-    delta is the min. step around a maximum
-
-    keyword arguments:
-    x array of x-values corresponding to v
-    gauge GaugeFrame  object for progress display
-    power at which power of 10 the analysis progress should be printed
-
-    MAXTAB[0] x-values for the maxima
-    MAXTAB[1] v-values for the maxima
-    MAXTAB[2] indices into v for the maxima
-
-    MINTAB same for the minima
-     
-    """
-    maxtab_x = []
-    maxtab_y = []
-    maxtab_i = []
-    mintab_x = []
-    mintab_y = []
-    mintab_i = []
-
-    # step size for progress information
-    pstep = 10**power
-    ndat = len(v)
-
-    if x is None:
-        x = np.arange(len(v))
+    def peakdet(self, delta, x = None, gauge = None, power = 5):
+        """
+        Converted from MATLAB script at http://billauer.co.il/peakdet.html
+        % Eli Billauer, 3.4.05 (Explicitly not copyrighted).
+        % This function is released to the public domain; Any use is allowed.
     
-    v = np.asarray(v)
+        MAXTAB,MINTAB = peakdet(v, delta, x)
     
-    if len(v) != len(x):
-        sys.exit('Input vectors v and x must have same length')
+        v is the array of values to analyze
+        delta is the min. step around a maximum
     
-    if not np.isscalar(delta):
-        sys.exit('Input argument delta must be a scalar')
+        keyword arguments:
+        x array of x-values corresponding to v
+        gauge GaugeFrame  object for progress display
+        power at which power of 10 the analysis progress should be printed
     
-    if delta <= 0:
-        sys.exit('Input argument delta must be positive')
+        MAXTAB[0] x-values for the maxima
+        MAXTAB[1] v-values for the maxima
+        MAXTAB[2] indices into v for the maxima
     
-    mn, mx = np.Inf, -np.Inf
-    mnpos, mxpos = np.NaN, np.NaN
+        MINTAB same for the minima
+         
+        """
+        print('Finding Peaks')
+        maxtab_x = []
+        maxtab_y = []
+        maxtab_i = []
+        mintab_x = []
+        mintab_y = []
+        mintab_i = []
     
-    lookformax = True
-    # step = len(v)/10.
-    for i in np.arange(len(v)):
-        current_value = v[i]
-        if  current_value> mx:
-            mx = current_value
-            mxpos = x[i]
-            max_i = i
-        if current_value < mn:
-            mn = current_value
-            mnpos = x[i]
-            min_i = i
+        # step size for progress information
+        pstep = 10**power
+        ndat = len(self.sp)
+    
+        if x is None:
+            x = np.arange(len(self.sp))
         
-        if lookformax:
-            if current_value < mx-delta:
-                maxtab_x.append(mxpos)
-                maxtab_y.append(mx)
-                maxtab_i.append(max_i)
-                mn = current_value
-                min_i = i
-                mnpos = x[i]
-                lookformax = False
-        else:
-            if current_value > mn+delta:
-                mintab_x.append(mnpos)
-                mintab_y.append(mn)
-                mintab_i.append(min_i)
+        self.sp = np.asarray(self.sp)
+        
+        if len(self.sp) != len(x):
+            sys.exit('Input vectors v and x must have same length')
+        
+        if not np.isscalar(delta):
+            sys.exit('Input argument delta must be a scalar')
+        
+        if delta <= 0:
+            sys.exit('Input argument delta must be positive')
+        
+        mn, mx = np.Inf, -np.Inf
+        mnpos, mxpos = np.NaN, np.NaN
+        
+        lookformax = True
+        # step = len(v)/10.
+        for i in np.arange(len(self.sp)):
+            current_value = self.sp[i]
+            if  current_value> mx:
                 mx = current_value
                 mxpos = x[i]
                 max_i = i
-                lookformax = True
-    return [maxtab_x, maxtab_y, maxtab_i], [mintab_x, mintab_y, mintab_i]
+            if current_value < mn:
+                mn = current_value
+                mnpos = x[i]
+                min_i = i
+            
+            if lookformax:
+                if current_value < mx-delta:
+                    maxtab_x.append(mxpos)
+                    maxtab_y.append(mx)
+                    maxtab_i.append(max_i)
+                    mn = current_value
+                    min_i = i
+                    mnpos = x[i]
+                    lookformax = False
+            else:
+                if current_value > mn+delta:
+                    mintab_x.append(mnpos)
+                    mintab_y.append(mn)
+                    mintab_i.append(min_i)
+                    mx = current_value
+                    mxpos = x[i]
+                    max_i = i
+                    lookformax = True
+        
+        print('Calculating Peaks')
+        maxima = {'x_max': maxtab_x, 'y_max': maxtab_y, 'index': maxtab_i}
+        minima = {'x_min': mintab_x, 'y_min': mintab_y, 'index': mintab_i}
+        self.res_pos = {'maxima': maxima, 'minima': minima}
+        print('Done')
 
 
-def peak_position(xpos, cut_value, file_name):
-    l = open(file_name, 'w')
-    l.write('# This is the data file that corresponds to the peak positions of the spectrum. \n')
-    l.write(f'#\ alpha = {d.alpha} \n')
-    l.write(f'#\ fmax = {d.fmax} \n')
-    l.write(f'#\ cut_value = {cut_value} \n')
-    l.write(f'#! xs[f,0]/ xl[f,1]/ \n')
-    
-    print('Working through peaks')
-    for i in range(len(xpos)):
-        if xpos[i] >= cut_value:
-            l.write(f'{xpos[i] - 5}    {xpos[i] + 5} \n')
-    
-    print('Done')
-    l.close()
+    def peak_range(xpos, cut_value, file_name):
+        l = open(file_name, 'w')
+        l.write('# This is the data file that corresponds to the peak positions of the spectrum. \n')
+        l.write(f'#\ alpha = {d.alpha} \n')
+        l.write(f'#\ fmax = {d.fmax} \n')
+        l.write(f'#\ cut_value = {cut_value} \n')
+        l.write(f'#! xs[f,0]/ xl[f,1]/ \n')
+        
+        print('Working through peaks')
+        for i in range(len(xpos)):
+            if xpos[i] >= cut_value:
+                l.write(f'{xpos[i] - 5}    {xpos[i] + 5} \n')
+        
+        print('Done')
+        l.close()
+        
+    def peak_position(self, cut_value, file_name):
+        k = open(file_name, 'w')
+        k.write('# This is the data file that corresponds to the peak positions of the spectrum. \n')
+        k.write(f'#\ alpha = {d.alpha} \n')
+        k.write(f'#\ fmax = {d.fmax} \n')
+        k.write(f'#\ cut_value = {cut_value} \n')
+        k.write(f'#! peakpos[f,0]/ \n')
+        
+        print('Working through peaks')
+        for i in range(len(self.x_max)):
+            if self.x_max[i] >= cut_value:
+                k.write(f'{d.x_max[i]}\n')
+        
+        print('Done')
+        k.close()
         
 
 #%% simulated data file
@@ -501,12 +530,20 @@ d.fft()
 #%% load filter and apply
 # ready to apply cuts etc.
 
-d.load_filters('filter_160813_test_30.data')
-d.calc_cuts()
-#d.smooth_cuts(250.)
+d.set_low_pass(8.5e5, 8.5e4)
+
 d.calc_low_pass()
+
 d.apply_lp_filter()
+
+d.peakdet(6000., d.f)
+
+d.calc_cut(99999.99999999999)
+
+d.smooth_cuts(1000.)
+
 d.apply_cuts()
+
 d.invert_corr()
 
 
@@ -518,6 +555,8 @@ B.pl.plot(d.tall[sl], d.V[sl])
 
 B.pl.plot(d.tall[sl], np.real(d.V_c[sl]))
 
+B.pl.xlabel(r'Time ($\mu$s)')
+B.pl.ylabel('Voltage (V)')
 #%% save corrected data
 
 f_name = f'{d.name}_filtered.npz'
