@@ -520,7 +520,9 @@ class digi_data:
 
 #%% simulated data file
 
-d_file = 'DAQ_160813-113140.hws'
+#d_file = 'DAQ_200813-111317.hws'
+d_file = 'DAQ_190813-112521.hws'
+#d_file = 'DAQ_160813-113140.hws'
 #d_file = '../MAST_data/Aug_13/DAQ_190813-112521.hws'
 
 d = digi_data(d_file, 0, convert_int = True)
@@ -530,7 +532,7 @@ d.fft()
 #%% load filter and apply
 # ready to apply cuts etc.
 
-d.set_low_pass(8.5e5, 8.5e4)
+d.set_low_pass(4e6, 4e5)
 
 d.calc_low_pass()
 
@@ -540,7 +542,7 @@ d.peakdet(6000., d.f)
 
 d.calc_cut(99999.99999999999)
 
-d.smooth_cuts(1000.)
+#d.smooth_cuts(1000.)
 
 d.apply_cuts()
 
@@ -561,18 +563,3 @@ B.pl.ylabel('Voltage (V)')
 
 f_name = f'{d.name}_filtered.npz'
 np.savez(f_name, time = d.tall, signal = d.V_c)
-
-#%%
-'''
-d.load_filters('filter_160813_test_28.data')
-
-d.calc_cuts()
-
-d.calc_low_pass()
-
-d.apply_lp_filter()
-
-d.apply_cuts()
-
-d.plot_spc(1)
-'''
