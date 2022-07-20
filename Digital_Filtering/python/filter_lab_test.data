@@ -1,5 +1,0 @@
-# This is the data file that corresponds to the peak positions of the spectrum. 
-#\ alpha = 1.0 
-#\ fmax = 100000000.0 
-#\ cut_value = 10000000.0 
-#! xs[f,0]/ xl[f,1]/ 
