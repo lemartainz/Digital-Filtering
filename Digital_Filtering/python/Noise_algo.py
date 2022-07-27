@@ -59,7 +59,7 @@ class digi_data:
     def __init__(self, file, chan_num, convert_int = False):
             self.chan_num = chan_num
             self.dir, self.name, self.ext = set_file_info(file)
-            print(("Open file : ",self.dir + self.name + self.ext))
+            print(("Open file : ",self.dir + self.name + self.ext, 'Channel Number: ', self.chan_num))
             self.f = h5py.File(self.dir + self.name + self.ext, 'r')
             # get the data
             # ee information
@@ -304,10 +304,10 @@ class digi_data:
         # pass freq. up to self.xmin the steepness of the cut is controlled by alpha
         # alpha width in Hz for step
         # index array of values to cut
-        self.hp_fact = 0.5*(1. + np.tanh( 1./self.alpha * (self.f + self.fmax) ))
+        self.hp_fact = 0.5*(1. + np.tanh( 1./self.alpha * (self.f - self.fmin) ))
         
-    def set_high_pass(self, fmax, alpha):
-        self.fmax = fmax
+    def set_high_pass(self, fmin, alpha):
+        self.fmin = fmin
         self.alpha = alpha
 
 
