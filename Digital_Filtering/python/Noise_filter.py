@@ -11,11 +11,11 @@ import numpy as np
 import Noise_algo as NA
 import os
 import fnmatch as fn
-import tqdm 
+
 
 def filter_script(d_file, chan_num,
-                  low_pass_a = 4e6, low_pass_f = 4e5,
-                  high_pass_a = 1e5, high_pass_f = 1e4, 
+                  low_pass_f = 4e6, low_pass_a = 4e5,
+                  high_pass_f = 1e5, high_pass_a = 1e4, 
                   calc_cut_numba_a = 5000., calc_cut_numba_b = 99999.99999999999):
     
 
@@ -23,13 +23,13 @@ def filter_script(d_file, chan_num,
 
     d.fft()
     
-    d.set_low_pass(low_pass_a, low_pass_f)
+    d.set_low_pass(low_pass_f, low_pass_a)
 
     d.calc_low_pass()
 
     d.apply_lp_filter()
 
-    d.set_high_pass(high_pass_a, high_pass_f)
+    d.set_high_pass(high_pass_f, high_pass_a)
 
     d.calc_high_pass()
 
@@ -44,20 +44,31 @@ def filter_script(d_file, chan_num,
     d.invert_corr()
     
     sl = d.get_t_slice(.1, .05)
-    
-    # B.pl.figure()
-    
-    B.pl.plot(d.tall[sl], d.V[sl])
 
     B.pl.plot(d.tall[sl], np.real(d.V_c[sl]))
 
-    B.pl.xlabel(r'Time ($\mu$s)')
+    B.pl.xlabel(r'Time (s)')
     
     B.pl.ylabel('Voltage (V)')
     
     f_name = f'{d.name}_chan_num_{d.chan_num}_filtered.npz'
     np.savez(f_name, time = d.tall, signal = d.V_c)
     print('Done with Filtering!')
+    
+    
+def plot_raw(d_file, chan_num):
+    
+    d = NA.digi_data(d_file, chan_num, convert_int = True)
+    
+    sl = d.get_t_slice(.1, .05)
+    
+    B.pl.plot(d.tall[sl], d.V[sl], color = 'black')
+
+    B.pl.xlabel(r'Time (s)')
+
+    B.pl.ylabel('Voltage (V)')
+    print('Done plotting raw data')
+
     
 #%% Directory Scraper
 
@@ -69,7 +80,7 @@ def scrape_data(dir_path):
     
     return d_file
     
-d_file = scrape_data('/Users/leo/Documents/GitHub/Digital-Filtering/Digital_Filtering/python')
+d_file = scrape_data('G:\Github\Digital_Filtering\python')
 chan_num = [0, 1, 2, 3]
 
 #%% Filter Datasets
@@ -82,41 +93,184 @@ for i, j in enumerate(d_file):
 
 #%% Optimize Parameters
 
-low_pass_a = np.arange(3e6, 5e6, 1e5)
-low_pass_f = np.arange(3e5, 5e5, 1e4)
-high_pass_a = np.arange(0.5e5, 2.5e5, 1e4)
-high_pass_f = np.arange(0.5e4, 2.5e4, 1e3)
+low_pass_f = np.arange(3e6, 5e6, 1e5)
+low_pass_a = np.arange(3e5, 5e5, 1e4)
+high_pass_f = np.arange(0.5e5, 2.5e5, 1e4)
+high_pass_a = np.arange(0.5e4, 2.5e4, 1e3)
 
-filter_script(d_file[0], 0, 5e6, 4e5, 1e5, 1e4, 5000., 99999.99999999999)
+
+#%%
+plot_raw(d_file[1], 0)
+filter_script(d_file[1], 0, 5e6, 4e5, 1e5, 1e4, 5000., 99999.99999999999)
+B.pl.xlim(0.1150924, 0.115094)
+B.pl.ylim(-0.15, 0.6)
 B.pl.figure()
-for i in high_pass_a[:5]:
-    filter_script(d_file[0], 0, 5e6, 4e5, i, 1e4, 5000., 99999.99999999999)
+
+
+#%% HIGH PASS FREQ
+
+for i in high_pass_f[:5]:
+    filter_script(d_file[1], 0, 5e6, 4e5, i, 1e4, 5000., 99999.99999999999)
     print(i)
-    p = []
-    p.append(i)
-    B.pl.legend([50000, 60000, 70000, 80000, 90000])  
+    B.pl.xlim(0.1150924, 0.115094)
+    B.pl.ylim(-0.15, 0.6)
+    B.pl.legend([high_pass_f[0], high_pass_f[1], high_pass_f[2], high_pass_f[3], high_pass_f[4]], loc ='best')  
+plot_raw(d_file[1], 0)
 B.pl.figure()
     
+
 for i in high_pass_a[5:10]:
-    filter_script(d_file[0], 0, 5e6, 4e5, i, 1e4, 5000., 99999.99999999999)
+    filter_script(d_file[1], 0, 5e6, 4e5, i, 1e4, 5000., 99999.99999999999)
     print(i)
-    p = []
-    p.append(i)
-    B.pl.legend([100000, 110000, 120000, 130000, 140000])
+    B.pl.xlim(0.1150924, 0.115094)
+    B.pl.ylim(-0.15, 0.6)
+    B.pl.legend([high_pass_f[5], high_pass_f[6], high_pass_f[7], high_pass_f[8], high_pass_f[9]], loc ='best')
+plot_raw(d_file[1], 0)
 B.pl.figure()
     
+
+for i in high_pass_f[10:15]:
+    filter_script(d_file[1], 0, 5e6, 4e5, i, 1e4, 5000., 99999.99999999999)
+    print(i)
+    B.pl.xlim(0.1150924, 0.115094)
+    B.pl.ylim(-0.15, 0.6)
+    B.pl.legend([high_pass_f[10], high_pass_f[11], high_pass_f[12], high_pass_f[13], high_pass_f[14]], loc = 'best')
+plot_raw(d_file[1], 0)
+B.pl.figure()
+
+
+for i in high_pass_f[15:20]:
+    filter_script(d_file[1], 0, 5e6, 4e5, i, 1e4, 5000., 99999.99999999999)
+    print(i)
+    B.pl.xlim(0.1150924, 0.115094)
+    B.pl.ylim(-0.15, 0.6)
+    B.pl.legend([high_pass_f[15], high_pass_f[16], high_pass_f[17], high_pass_f[18], high_pass_f[19]], loc = 'best')
+plot_raw(d_file[1], 0)   
+B.pl.figure()
+
+
+#%% HIGH PASS ALPHA
+
+
+for i in high_pass_a[:5]:
+    filter_script(d_file[1], 0, 5e6, 4e5, 1e5, i, 5000., 99999.99999999999)
+    print(i)
+    B.pl.xlim(0.1150924, 0.115094)
+    B.pl.ylim(-0.15, 0.6)
+    B.pl.legend([high_pass_a[0], high_pass_a[1], high_pass_a[2], high_pass_a[3], high_pass_a[4]], loc ='best')  
+plot_raw(d_file[1], 0)
+B.pl.figure()
+
+
+for i in high_pass_a[5:10]:
+    filter_script(d_file[1], 0, 5e6, 4e5, 1e5, i, 5000., 99999.99999999999)
+    print(i)
+    B.pl.xlim(0.1150924, 0.115094)
+    B.pl.ylim(-0.15, 0.6)
+    B.pl.legend([high_pass_a[5], high_pass_a[6], high_pass_a[7], high_pass_a[8], high_pass_a[9]], loc ='best')
+plot_raw(d_file[1], 0)
+B.pl.figure()
     
+   
 for i in high_pass_a[10:15]:
-    filter_script(d_file[0], 0, 5e6, 4e5, i, 1e4, 5000., 99999.99999999999)
+    filter_script(d_file[1], 0, 5e6, 4e5, 1e5, i, 5000., 99999.99999999999)
     print(i)
-    p = []
-    p.append(i)
-    B.pl.legend([150000, 160000, 170000, 180000, 190000])
+    B.pl.xlim(0.1150924, 0.115094)
+    B.pl.ylim(-0.15, 0.6)
+    B.pl.legend([high_pass_a[10], high_pass_a[11], high_pass_a[12], high_pass_a[13], high_pass_a[14]], loc = 'best')
+plot_raw(d_file[1], 0)
 B.pl.figure()
+
 
 for i in high_pass_a[15:20]:
-    filter_script(d_file[0], 0, 5e6, 4e5, i, 1e4, 5000., 99999.99999999999)
+    filter_script(d_file[1], 0, 5e6, 4e5, 1e5, i, 5000., 99999.99999999999)
     print(i)
-    p = []
-    p.append(i)
-    B.pl.legend([200000, 210000, 220000, 230000, 240000])
+    B.pl.xlim(0.1150924, 0.115094)
+    B.pl.ylim(-0.15, 0.6)
+    B.pl.legend([high_pass_a[15], high_pass_a[16], high_pass_a[17], high_pass_a[18], high_pass_a[19]], loc = 'best')
+plot_raw(d_file[1], 0)                
+B.pl.figure()
+
+            
+#%% LOW PASS ALPHA
+
+
+for i in low_pass_a[:5]:
+    filter_script(d_file[1], 0, 5e6, i, 1e5, 1e4, 5000., 99999.99999999999)
+    print(i)
+    B.pl.xlim(0.1150924, 0.115094)
+    B.pl.ylim(-0.15, 0.6)
+    B.pl.legend([low_pass_a[0], low_pass_a[1], low_pass_a[2], low_pass_a[3], low_pass_a[4]], loc ='best')  
+plot_raw(d_file[1], 0)
+B.pl.figure()
+
+
+for i in low_pass_a[5:10]:
+    filter_script(d_file[1], 0, 5e6, i, 1e5, 1e4, 5000., 99999.99999999999)
+    print(i)
+    B.pl.xlim(0.1150924, 0.115094)
+    B.pl.ylim(-0.15, 0.6)
+    B.pl.legend([low_pass_a[5], low_pass_a[6], low_pass_a[7], low_pass_a[8], low_pass_a[9]], loc ='best')
+plot_raw(d_file[1], 0)
+B.pl.figure()
+    
+    
+for i in low_pass_a[10:15]:
+    filter_script(d_file[1], 0, 5e6, i, 1e5, 1e4, 5000., 99999.99999999999)
+    print(i)
+    B.pl.xlim(0.1150924, 0.115094)
+    B.pl.ylim(-0.15, 0.6)
+    B.pl.legend([low_pass_a[10], low_pass_a[11], low_pass_a[12], low_pass_a[13], low_pass_a[14]], loc = 'best')
+plot_raw(d_file[1], 0)
+B.pl.figure()
+
+
+for i in low_pass_a[15:20]:
+    filter_script(d_file[1], 0, 5e6, i, 1e5, 1e4, 5000., 99999.99999999999)
+    print(i)
+    B.pl.xlim(0.1150924, 0.115094)
+    B.pl.ylim(-0.15, 0.6)
+    B.pl.legend([low_pass_a[15], low_pass_a[16], low_pass_a[17], low_pass_a[18], low_pass_a[19]], loc = 'best')
+plot_raw(d_file[1], 0)   
+B.pl.figure()
+#%% LOW PASS FREQ  
+
+
+for i in low_pass_f[:5]:
+    filter_script(d_file[1], 0, i, 4e5, 1e5, 1e4, 5000., 99999.99999999999)
+    print(i)
+    B.pl.xlim(0.1150924, 0.115094)
+    B.pl.ylim(-0.15, 0.6)
+    B.pl.legend([low_pass_f[0], low_pass_f[1], low_pass_f[2], low_pass_f[3], low_pass_f[4]], loc ='best')  
+plot_raw(d_file[1], 0)
+B.pl.figure()
+    
+
+for i in low_pass_f[5:10]:
+    filter_script(d_file[1], 0, i, 4e5, 1e5, 1e4, 5000., 99999.99999999999)
+    print(i)
+    B.pl.xlim(0.1150924, 0.115094)
+    B.pl.ylim(-0.15, 0.6)
+    B.pl.legend([low_pass_f[5], low_pass_f[6], low_pass_f[7], low_pass_f[8], low_pass_f[9]], loc ='best')
+plot_raw(d_file[1], 0)
+B.pl.figure()
+    
+   
+for i in low_pass_f[10:15]:
+    filter_script(d_file[1], 0, i, 4e5, 1e5, 1e4, 5000., 99999.99999999999)
+    print(i)
+    B.pl.xlim(0.1150924, 0.115094)
+    B.pl.ylim(-0.15, 0.6)
+    B.pl.legend([low_pass_f[10], low_pass_f[11], low_pass_f[12], low_pass_f[13], low_pass_f[14]], loc = 'best')
+plot_raw(d_file[1], 0)
+B.pl.figure()
+
+
+for i in low_pass_f[15:20]:
+    filter_script(d_file[1], 0, i, 4e5, 1e5, 1e4, 5000., 99999.99999999999)
+    print(i)
+    B.pl.xlim(0.1150924, 0.115094)
+    B.pl.ylim(-0.15, 0.6)
+    B.pl.legend([low_pass_f[15], low_pass_f[16], low_pass_f[17], low_pass_f[18], low_pass_f[19]], loc = 'best')
+plot_raw(d_file[1], 0)    
+B.pl.figure()
