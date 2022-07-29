@@ -29,15 +29,15 @@ def filter_script(d_file, chan_num,
 
     d.apply_lp_filter()
 
-    d.set_high_pass(high_pass_f, high_pass_a)
+    # d.set_high_pass(high_pass_f, high_pass_a)
 
-    d.calc_high_pass()
+    # d.calc_high_pass()
 
-    d.apply_hp_filter()
+    # d.apply_hp_filter()
 
     d.calc_cut_numba(calc_cut_numba_a, calc_cut_numba_b)
 
-    d.smooth_cuts(100.)
+    d.smooth_cuts(1000.)
 
     d.apply_cuts()
 
@@ -46,7 +46,7 @@ def filter_script(d_file, chan_num,
     sl = d.get_t_slice(.1, .05)
 
     B.pl.plot(d.tall[sl], np.real(d.V_c[sl]))
-
+    
     B.pl.xlabel(r'Time (s)')
     
     B.pl.ylabel('Voltage (V)')
@@ -93,16 +93,16 @@ for i, j in enumerate(d_file):
 
 #%% Optimize Parameters
 
-low_pass_f = np.arange(3e6, 5e6, 1e5)
-low_pass_a = np.arange(3e5, 5e5, 1e4)
+low_pass_f = np.arange(1.1e6, 3.1e6, 1e5)
+low_pass_a = np.arange(1e5, 3e5, 1e4)
 high_pass_f = np.arange(0.5e5, 2.5e5, 1e4)
 high_pass_a = np.arange(0.5e4, 2.5e4, 1e3)
 
 
 #%%
 plot_raw(d_file[1], 0)
-filter_script(d_file[1], 0, 5e6, 4e5, 1e5, 1e4, 5000., 99999.99999999999)
-B.pl.xlim(0.1150924, 0.115094)
+filter_script(d_file[1], 0, 3e6, 3e5, 1.4e5, 1e4, 6000., 99999.99999999999)
+B.pl.xlim(0.116424, 0.116427)
 B.pl.ylim(-0.15, 0.6)
 B.pl.figure()
 
@@ -198,7 +198,7 @@ B.pl.figure()
 for i in low_pass_a[:5]:
     filter_script(d_file[1], 0, 5e6, i, 1e5, 1e4, 5000., 99999.99999999999)
     print(i)
-    B.pl.xlim(0.1150924, 0.115094)
+    B.pl.xlim(0.116424, 0.116427)
     B.pl.ylim(-0.15, 0.6)
     B.pl.legend([low_pass_a[0], low_pass_a[1], low_pass_a[2], low_pass_a[3], low_pass_a[4]], loc ='best')  
 plot_raw(d_file[1], 0)
@@ -208,7 +208,7 @@ B.pl.figure()
 for i in low_pass_a[5:10]:
     filter_script(d_file[1], 0, 5e6, i, 1e5, 1e4, 5000., 99999.99999999999)
     print(i)
-    B.pl.xlim(0.1150924, 0.115094)
+    B.pl.xlim(0.116424, 0.116427)
     B.pl.ylim(-0.15, 0.6)
     B.pl.legend([low_pass_a[5], low_pass_a[6], low_pass_a[7], low_pass_a[8], low_pass_a[9]], loc ='best')
 plot_raw(d_file[1], 0)
@@ -218,7 +218,7 @@ B.pl.figure()
 for i in low_pass_a[10:15]:
     filter_script(d_file[1], 0, 5e6, i, 1e5, 1e4, 5000., 99999.99999999999)
     print(i)
-    B.pl.xlim(0.1150924, 0.115094)
+    B.pl.xlim(0.116424, 0.116427)
     B.pl.ylim(-0.15, 0.6)
     B.pl.legend([low_pass_a[10], low_pass_a[11], low_pass_a[12], low_pass_a[13], low_pass_a[14]], loc = 'best')
 plot_raw(d_file[1], 0)
@@ -228,7 +228,7 @@ B.pl.figure()
 for i in low_pass_a[15:20]:
     filter_script(d_file[1], 0, 5e6, i, 1e5, 1e4, 5000., 99999.99999999999)
     print(i)
-    B.pl.xlim(0.1150924, 0.115094)
+    B.pl.xlim(0.116424, 0.116427)
     B.pl.ylim(-0.15, 0.6)
     B.pl.legend([low_pass_a[15], low_pass_a[16], low_pass_a[17], low_pass_a[18], low_pass_a[19]], loc = 'best')
 plot_raw(d_file[1], 0)   
@@ -239,7 +239,7 @@ B.pl.figure()
 for i in low_pass_f[:5]:
     filter_script(d_file[1], 0, i, 4e5, 1e5, 1e4, 5000., 99999.99999999999)
     print(i)
-    B.pl.xlim(0.1150924, 0.115094)
+    B.pl.xlim(0.116424, 0.116427)
     B.pl.ylim(-0.15, 0.6)
     B.pl.legend([low_pass_f[0], low_pass_f[1], low_pass_f[2], low_pass_f[3], low_pass_f[4]], loc ='best')  
 plot_raw(d_file[1], 0)
@@ -249,7 +249,7 @@ B.pl.figure()
 for i in low_pass_f[5:10]:
     filter_script(d_file[1], 0, i, 4e5, 1e5, 1e4, 5000., 99999.99999999999)
     print(i)
-    B.pl.xlim(0.1150924, 0.115094)
+    B.pl.xlim(0.116424, 0.116427)
     B.pl.ylim(-0.15, 0.6)
     B.pl.legend([low_pass_f[5], low_pass_f[6], low_pass_f[7], low_pass_f[8], low_pass_f[9]], loc ='best')
 plot_raw(d_file[1], 0)
@@ -259,7 +259,7 @@ B.pl.figure()
 for i in low_pass_f[10:15]:
     filter_script(d_file[1], 0, i, 4e5, 1e5, 1e4, 5000., 99999.99999999999)
     print(i)
-    B.pl.xlim(0.1150924, 0.115094)
+    B.pl.xlim(0.116424, 0.116427)
     B.pl.ylim(-0.15, 0.6)
     B.pl.legend([low_pass_f[10], low_pass_f[11], low_pass_f[12], low_pass_f[13], low_pass_f[14]], loc = 'best')
 plot_raw(d_file[1], 0)
@@ -269,7 +269,7 @@ B.pl.figure()
 for i in low_pass_f[15:20]:
     filter_script(d_file[1], 0, i, 4e5, 1e5, 1e4, 5000., 99999.99999999999)
     print(i)
-    B.pl.xlim(0.1150924, 0.115094)
+    B.pl.xlim(0.116424, 0.116427)
     B.pl.ylim(-0.15, 0.6)
     B.pl.legend([low_pass_f[15], low_pass_f[16], low_pass_f[17], low_pass_f[18], low_pass_f[19]], loc = 'best')
 plot_raw(d_file[1], 0)    
