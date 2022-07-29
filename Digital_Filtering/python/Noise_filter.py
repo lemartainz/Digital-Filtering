@@ -84,13 +84,13 @@ d_file = scrape_data('G:\Github\Digital_Filtering\python')
 chan_num = [0, 1, 2, 3]
 
 #%% Filter Datasets
-'''
+
+
 for i, j in enumerate(d_file):
     for k in chan_num:
         filter_script(j, k)
-        #print(j,k)
-'''
-
+        
+        
 #%% Optimize Parameters
 
 low_pass_f = np.arange(1.1e6, 3.1e6, 1e5)
