@@ -14,9 +14,9 @@ import fnmatch as fn
 
 
 def filter_script(d_file, chan_num,
-                  low_pass_f = 4e6, low_pass_a = 4e5,
+                  low_pass_f = 3e6, low_pass_a = 3e5,
                   high_pass_f = 1e5, high_pass_a = 1e4, 
-                  calc_cut_numba_a = 5000., calc_cut_numba_b = 99999.99999999999):
+                  calc_cut_numba_a = 6000., calc_cut_numba_b = 99999.99999999999):
     
 
     d = NA.digi_data(d_file, chan_num, convert_int = True)
@@ -96,14 +96,14 @@ for i, j in enumerate(d_file):
 low_pass_f = np.arange(1.1e6, 3.1e6, 1e5)
 low_pass_a = np.arange(1e5, 3e5, 1e4)
 high_pass_f = np.arange(0.5e5, 2.5e5, 1e4)
-high_pass_a = np.arange(0.5e4, 2.5e4, 1e3)
+high_pass_a = np.arange(0.5e-2, 2.5e-2, 1e-3)
 
 
 #%%
 plot_raw(d_file[1], 0)
-filter_script(d_file[1], 0, 3e6, 3e5, 1.4e5, 1e4, 6000., 99999.99999999999)
+filter_script(d_file[1], 0, 3e6, 3e5, 1e5, 1e4, 6000., 99999.99999999999)
 B.pl.xlim(0.116424, 0.116427)
-B.pl.ylim(-0.15, 0.6)
+B.pl.ylim(-0.15, 0.7)
 B.pl.figure()
 
 
