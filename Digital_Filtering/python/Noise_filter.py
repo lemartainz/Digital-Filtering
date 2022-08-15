@@ -16,7 +16,7 @@ import fnmatch as fn
 def filter_script(d_file, chan_num,
                   low_pass_f = 3e6, low_pass_a = 3e5,
                   high_pass_f = 1e5, high_pass_a = 1e4, 
-                  calc_cut_numba_a = 6000., calc_cut_numba_b = 99999.99999999999):
+                  calc_cut_numba_d = 6000., calc_cut_numba_p = 99999.99999999999):
     
 
     d = NA.digi_data(d_file, chan_num, convert_int = True)
@@ -35,7 +35,7 @@ def filter_script(d_file, chan_num,
 
     d.apply_hp_filter()
 
-    d.calc_cut_numba(calc_cut_numba_a, calc_cut_numba_b)
+    d.calc_cut_numba(calc_cut_numba_d, calc_cut_numba_p)
 
     d.smooth_cuts(1000.)
 
