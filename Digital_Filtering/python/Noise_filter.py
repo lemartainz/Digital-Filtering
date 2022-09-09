@@ -70,7 +70,6 @@ def plot_raw(d_file, chan_num):
     print('Done plotting raw data')
 
     
-#%% Directory Scraper
 
 def scrape_data(dir_path):
     d_file = []
@@ -80,18 +79,23 @@ def scrape_data(dir_path):
     
     return d_file
     
-d_file = scrape_data('G:\Github\Digital_Filtering\python')
+# d_file = scrape_data('G:\Github\Digital_Filtering\python')
+d_file = scrape_data('/Users/leo/Documents/GitHub/Digital-Filtering/Digital_Filtering/python')
 chan_num = [0, 1, 2, 3]
 
 #%% Filter Datasets
 
-
+# Run this in the directory your data is stored in
+# Must implement database functions to interact with new database
 for i, j in enumerate(d_file):
     for k in chan_num:
         filter_script(j, k)
         
         
 #%% Optimize Parameters
+'''
+
+
 
 low_pass_f = np.arange(1.1e6, 3.1e6, 1e5)
 low_pass_a = np.arange(1e5, 3e5, 1e4)
@@ -274,3 +278,7 @@ for i in low_pass_f[15:20]:
     B.pl.legend([low_pass_f[15], low_pass_f[16], low_pass_f[17], low_pass_f[18], low_pass_f[19]], loc = 'best')
 plot_raw(d_file[1], 0)    
 B.pl.figure()
+
+
+
+'''
