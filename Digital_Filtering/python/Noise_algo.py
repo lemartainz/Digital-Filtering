@@ -18,7 +18,7 @@ import os
 import h5py
 import copy as C
 from matplotlib.widgets import Cursor
-#import ffind_peaks as FP
+import ffind_peaks as FP
 import sys
 
 from numba import njit
@@ -52,6 +52,53 @@ def set_file_info(filename):
      ext = ext
      return ddir, name, ext
 
+
+
+def find_peaks(yval, ystep, xval = None, \
+                xmin = None, xmax = None, limits = None, \
+                power = 5,\
+                get_window = None ):
+      # find peaks in an array of data
+      # get_window is a function that returns the slice of data between xmin and xmax
+      # peak finding
+      nmin = 0
+      nmax = 0
+      MAXTAB=[]
+      MINTAB=[]
+      if ((xmin == None) and (xmax == None)) or (not limits) or (get_window == None):
+          print("No limits present, analyze all data")
+          results = np.zeros((2,), dtype = 'int32')
+          pmin = np.zeros(int(len(yval)/5, ), dtype='int32')
+          pmax = np.zeros(int(len(yval)/5, ), dtype='int32')
+          try:
+              FP.find_peaks(len(yval), ystep, yval, results, pmin, pmax)
+          except:
+              print("problem with peak finding")
+              return []
+          nmin = results[0]
+          nmax = results[1]
+      else:
+          # get the window
+          print(("Analyze data between ", xmin, " and ", xmax))
+          sl = get_window( xmin, xval, xmax)
+          # progress dialog
+          results = np.zeros((2,), dtype = 'int32')
+          pmin = np.zeros(int(len(yval[sl])/5, ), dtype='int32')
+          pmax = np.zeros(int(len(yval[sl])/5, ), dtype='int32')
+          try:
+              FP.find_peaks(len(yval[sl]), ystep, yval[sl], results, pmin, pmax)
+          except:
+                print("problem with peak finding")
+                return []
+          nmin = results[0]
+          nmax = results[1]
+      MAXTAB.append( xval[pmax[:nmax]] )
+      MAXTAB.append( yval[pmax[:nmax]] )
+      MAXTAB.append(pmax[:nmax])
+      MINTAB.append( xval[pmin[:nmin]] )
+      MINTAB.append( yval[pmin[:nmin]] )
+      MINTAB.append(pmin[:nmin])
+      return [MAXTAB,MINTAB]
 
 
 class digi_data:
@@ -254,23 +301,7 @@ class digi_data:
             self.fig.canvas.mpl_disconnect(self.cid_k)
         else:
             return
-        
-    def calc_cut(self, cut_value):
-        # Calculate the cut factor to be applied later
-        self.cut_fact = np.ones_like(self.f)
-        print('Calculating cuts')
-        self.cut_index = np.where(self.f == cut_value)[0]
-        # Set the cut_fact to 0 for the specified values
-        self.i_max = self.res_pos['maxima']['index']
-        self.i_min = self.res_pos['minima']['index']
-        self.x_max = self.res_pos['maxima']['x_max']
-        self.x_min = self.res_pos['minima']['x_min']
-        
-        for i in self.i_max:
-            if i >= self.cut_index:
-                self.cut_fact[i - 900: i + 900] = 0.
-            
-        print('Done calculating cuts!')
+    
         
     def calc_cut_numba(self, delta, cut_value):
         # Calculate the cut factor to be applied later
@@ -285,7 +316,25 @@ class digi_data:
             
         print('Done calculating cuts!')
 
-
+    def calc_cut_peaks(self, delta, cut_value):
+        # Calculate the cut factor to be applied later
+        self.cut_fact = np.ones_like(self.f)
+        print('Calculating cuts')
+        self.cut_index = np.where(self.f == cut_value)[0]
+        # Set the cut_fact to 0 for the specified values
+        self.peak_info = find_peaks(self.sp, delta, self.f)
+        self.max_info = self.peak_info[0]
+        self.t_peaks = np.array(self.max_info[0])
+        self.f_peaks = np.array(self.max_info[1])
+        self.max_i = np.array(self.max_info[2])
+        for i in self.max_i:
+            # Sets the frequency to zero for a given range
+            if i >= self.cut_index:
+                self.cut_fact[i - 900: i + 900] = 0.
+            
+        print('Done Calculating cuts')
+        
+        
     def smooth_cuts(self, sigma):
         # smooth the cut edges
         kernel_size = int(5.*sigma/self.df)
@@ -306,6 +355,7 @@ class digi_data:
         # index array of values to cut
         self.hp_fact = 0.5*(1. + np.tanh( 1./self.alpha * (self.f - self.fmin) ))
         
+        
     def set_high_pass(self, fmin, alpha):
         self.fmin = fmin
         self.alpha = alpha
@@ -325,13 +375,16 @@ class digi_data:
             self.V_fc = C.copy(self.V_f)
         self.V_fc *= self.cut_fact
 
+
     def reset_corr(self):
         self.V_fc = C.copy(self.V_f)
+
 
     def invert_corr(self):
         if self.V_fc is None:
             return
         self.V_c = irfft(self.V_fc)
+
 
     def apply_lp_filter(self):
         if self.lp_fact is None:
@@ -341,6 +394,7 @@ class digi_data:
             self.V_fc = C.copy(self.V_f)
         self.V_fc *= self.lp_fact
         
+        
     def apply_hp_filter(self):
         if self.hp_fact is None:
             print('high pass filter not calculated (use high_pass)')
@@ -348,6 +402,7 @@ class digi_data:
         if self.V_fc is None:
             self.V_fc = C.copy(self.V_f)
         self.V_fc *= self.hp_fact
+
 
     def save_filters(self, f_filename):
         o = open(f_filename, 'w')
@@ -358,113 +413,25 @@ class digi_data:
             o.write(f'{xs} {xl} \n')
         o.close()
  
+    
     def load_filters(self, f_filename):
          fd = B.get_file(f_filename)
          self.alpha = fd.par['alpha']
          self.fmax = fd.par['fmax']
          self.cuts = list(zip(fd['xs'], fd['xl']))
 
+
     def get_t_slice(self, t_start, delta_t):
         istart = int(t_start/self.dt); iend = int(delta_t/self.dt)
         return slice(istart, istart + iend)
+
 
     def get_f_slice(self, f_start, delta_f):
         istart = int(f_start/self.df); iend = int(delta_f/self.df)
         return slice(istart, istart + iend)
 
 
-    def peakdet(self, delta, x = None, gauge = None, power = 5):
-        """
-        Converted from MATLAB script at http://billauer.co.il/peakdet.html
-        % Eli Billauer, 3.4.05 (Explicitly not copyrighted).
-        % This function is released to the public domain; Any use is allowed.
-    
-        MAXTAB,MINTAB = peakdet(v, delta, x)
-    
-        v is the array of values to analyze
-        delta is the min. step around a maximum
-    
-        keyword arguments:
-        x array of x-values corresponding to v
-        gauge GaugeFrame  object for progress display
-        power at which power of 10 the analysis progress should be printed
-    
-        MAXTAB[0] x-values for the maxima
-        MAXTAB[1] v-values for the maxima
-        MAXTAB[2] indices into v for the maxima
-    
-        MINTAB same for the minima
-         
-        """
-        print('Finding Peaks')
-        maxtab_x = []
-        maxtab_y = []
-        maxtab_i = []
-        mintab_x = []
-        mintab_y = []
-        mintab_i = []
-    
-        # step size for progress information
-        pstep = 10**power
-        ndat = len(self.sp)
-    
-        if x is None:
-            x = np.arange(len(self.sp))
-        
-        self.sp = np.asarray(self.sp)
-        
-        if len(self.sp) != len(x):
-            sys.exit('Input vectors v and x must have same length')
-        
-        if not np.isscalar(delta):
-            sys.exit('Input argument delta must be a scalar')
-        
-        if delta <= 0:
-            sys.exit('Input argument delta must be positive')
-        
-        mn, mx = np.Inf, -np.Inf
-        mnpos, mxpos = np.NaN, np.NaN
-        
-        lookformax = True
-        # step = len(v)/10.
-        for i in np.arange(len(self.sp)):
-            current_value = self.sp[i]
-            if  current_value> mx:
-                mx = current_value
-                mxpos = x[i]
-                max_i = i
-            if current_value < mn:
-                mn = current_value
-                mnpos = x[i]
-                min_i = i
-            
-            if lookformax:
-                if current_value < mx-delta:
-                    maxtab_x.append(mxpos)
-                    maxtab_y.append(mx)
-                    maxtab_i.append(max_i)
-                    mn = current_value
-                    min_i = i
-                    mnpos = x[i]
-                    lookformax = False
-            else:
-                if current_value > mn+delta:
-                    mintab_x.append(mnpos)
-                    mintab_y.append(mn)
-                    mintab_i.append(min_i)
-                    mx = current_value
-                    mxpos = x[i]
-                    max_i = i
-                    lookformax = True
-        
-        print('Calculating Peaks')
-        maxima = {'x_max': maxtab_x, 'y_max': maxtab_y, 'index': maxtab_i}
-        minima = {'x_min': mintab_x, 'y_min': mintab_y, 'index': mintab_i}
-        self.res_pos = {'maxima': maxima, 'minima': minima}
-        print('Done')
-        
-
-        
+                
 @njit
 def peakdet_numba(v, delta, get_max = True):
     """

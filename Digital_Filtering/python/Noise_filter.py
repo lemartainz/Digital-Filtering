@@ -35,13 +35,15 @@ def filter_script(d_file, chan_num,
 
     d.apply_hp_filter()
 
-    d.calc_cut_numba(calc_cut_numba_d, calc_cut_numba_p)
+    d.calc_cut_peaks(calc_cut_numba_d, calc_cut_numba_p)
 
     d.smooth_cuts(1000.)
 
     d.apply_cuts()
 
     d.invert_corr()
+    
+    print('Filtering complete')
     
     sl = d.get_t_slice(.1, .05)
 
@@ -51,9 +53,11 @@ def filter_script(d_file, chan_num,
     
     B.pl.ylabel('Voltage (V)')
     
+    
     f_name = f'{d.name}_chan_num_{d.chan_num}_filtered.npz'
     np.savez(f_name, time = d.tall, signal = d.V_c)
-    print('Done with Filtering!')
+    
+    print('Done')
     
     
 def plot_raw(d_file, chan_num):
@@ -78,7 +82,9 @@ def scrape_data(dir_path):
             d_file.append(f)
     
     return d_file
-    
+
+# directory where the data is located
+
 # d_file = scrape_data('G:\Github\Digital_Filtering\python')
 d_file = scrape_data('/Users/leo/Documents/GitHub/Digital-Filtering/Digital_Filtering/python')
 chan_num = [0, 1, 2, 3]
@@ -87,11 +93,13 @@ chan_num = [0, 1, 2, 3]
 
 # Run this in the directory your data is stored in
 # Must implement database functions to interact with new database
+
+plot_raw(d_file[0], 0)
 for i, j in enumerate(d_file):
     for k in chan_num:
         filter_script(j, k)
         
-        
+
 #%% Optimize Parameters
 '''
 
